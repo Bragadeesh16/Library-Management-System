@@ -22,9 +22,9 @@ class User(db.Model):
     password = db.Column(db.String(80))
 
 
-class book(db.Model):
+class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    auther = db.Column(db.String, db.ForeignKey("user.id"), nullable=False)
+    auther = db.Column(db.String, nullable=False)
     tittle = db.Column(db.String(50), unique=True)
 
 
@@ -33,20 +33,19 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = None
 
-        # Check for the 'x-access-token' header
         if "x-access-token" in request.headers:
             auth_header = request.headers["x-access-token"]
-            # Handle 'Bearer' prefix if present
-            if auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
-            else:
-                token = auth_header
+            # if auth_header.startswith("Bearer "):
+            #     token = auth_header.split(" ")[1]
+            # else:
+                # token = auth_header
+            token = auth_header
 
         if not token:
             return jsonify({"message": "Token is missing !!"}), 401
 
         try:
-            data = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            data = jwt.decode(token, app.config["SECRET_KEY"])
             current_user = User.query.filter_by(public_id=data["public_id"]).first()
         except jwt.ExpiredSignatureError:
             return jsonify({"message": "Token has expired !!"}), 401
@@ -148,37 +147,37 @@ def signup():
 
 
 @app.route("/add", methods=["POST"])
-def addbook():
+def addBook():
     data = request.form
-    if not data or not data.get("auther") and not data.get("tittle"):
-        books = book(auther=data.get("auther"), tittle=data.get("tittle"))
-        db.session.add(books)
-        db.session.commit()
-        return jsonify({"your book is added"}, 201)
-    else:
-        return jsonify({"invalid"})
+
+    if not data or not data.get("auther") or not data.get("tittle"):
+        return jsonify({"error": "Both 'auther' and 'tittle' are required"}), 400
+
+    new_Book = Book(auther=data.get("auther"), tittle=data.get("tittle"))
+    db.session.add(new_Book)
+    db.session.commit()
+
+    return jsonify({"message": "Your Book is added"}), 201
 
 
-app.route("/delete", methods=["POST", "DELETE"])
-
-
-def deletebook():
+@app.route("/delete", methods=["POST", "DELETE"])
+def deleteBook():
     data = request.form
     if not data or data.get("tittle"):
-        books = book.query.filter_by(tittle=data.get("tittle")).delete()
-        return jsonify({"this book has been deleted"}, 200)
+        Book.query.filter_by(tittle=data.get("tittle")).delete()
+        return jsonify({"this Book has been deleted"}, 200)
     else:
-        return jsonify({"invalid book name"})
+        return jsonify({"invalid Book name"})
 
 
-@app.route("/allbooks", methods=["GET"])
-def getbook():
-    books = book.query.all()
+@app.route("/allBooks", methods=["GET"])
+def getBook():
+    Books = Book.query.all()
     output = []
-    for books in books:
-        output.append({"book_name": books.tittle, "auther": books.auther})
+    for Books in Books:
+        output.append({"Book_name": Books.tittle, "auther": Books.auther})
 
-    return jsonify({"books": output})
+    return jsonify({"Books": output})
 
 
 with app.app_context():
