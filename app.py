@@ -163,12 +163,15 @@ def addBook():
 @app.route("/delete", methods=["POST", "DELETE"])
 def deleteBook():
     data = request.form
-    if not data or data.get("tittle"):
-        Book.query.filter_by(tittle=data.get("tittle")).delete()
-        return jsonify({"this Book has been deleted"}, 200)
+    if not data or not data.get("tittle"):
+        return jsonify({"error": "Invalid Book name"}), 400  
+    book_to_delete = Book.query.filter_by(tittle=data.get("tittle")).first()
+    if book_to_delete:
+        db.session.delete(book_to_delete)
+        db.session.commit()
+        return jsonify({"message": "This Book has been deleted"}), 200
     else:
-        return jsonify({"invalid Book name"})
-
+        return jsonify({"error": "Book not found"}), 404
 
 @app.route("/allBooks", methods=["GET"])
 def getBook():
