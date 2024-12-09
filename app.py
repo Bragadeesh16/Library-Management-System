@@ -179,6 +179,27 @@ def getBook():
 
     return jsonify({"Books": output})
 
+@app.route('/searchbook', methods=['POST'])
+def searchbook():
+    data = request.form
+    if data.get('tittle'):
+        books = Book.query.filter_by(tittle=data.get('tittle')).all()
+        if books:
+            return jsonify({'books': [book.to_dict() for book in books]})
+        else:
+            return jsonify({'message': 'No books found with that title.'})
+
+    elif data.get('auther'):
+        books = Book.query.filter_by(auther=data.get('auther')).all()
+        if books:
+            return jsonify({'books': [book.to_dict() for book in books]})
+        else:
+            return jsonify({'message': 'No books found by that author.'})
+
+    else:
+        return jsonify({'message': 'Please enter valid data.'})
+
+
 
 with app.app_context():
     db.create_all()
